@@ -1,0 +1,170 @@
+#!/usr/bin/python
+
+import sys
+from random import shuffle,seed
+
+class deck_of_cards:
+  def __init__(self):
+    ranks = range(2, 15)
+    suits = "Diamonds Hearts Clubs Spades".split()
+    self.deck = [playing_card(rank,suit) for suit in suits for rank in ranks]
+
+  def shuffle(self):
+    shuffle(self.deck)
+
+  def set_trump(self,trump_suit):
+    self.trump_suit=trump_suit
+    for card in self.deck:
+      if card.suit.lower() == trump_suit.lower():
+        card.trump=True
+
+class pedro_player:
+  def __init__(self,name):
+    self.name=name
+    self.hand=[]
+
+  def clear_hand(self):
+    self.hand=[]
+
+  def sort_hand(self):
+    self.hand=sorted(self.hand,key=lambda x:(x.suit_rank,x.sort_rank))
+
+  def __repr__(self):
+    return self.name
+
+  def __str__(self):
+    return self.name
+
+
+
+
+
+class pedro_game:
+  def __init__(self,we,they,deck):
+
+    self.deck=deck
+    self.players=(pedro_player(we[0]),
+        pedro_player(they[0]),
+        pedro_player(we[1]),
+        pedro_player(they[1]))
+
+    #self.we=(self.players[0],self.players[2])
+    #self.they=(self.players[1],self.players[3])
+
+class pedro_round:
+  def __init__(self,game,dealer):
+    """ game = instance of pedro_game 
+    dealer = integer corresponding to current dealer"""
+
+    self.dealer=dealer
+    self.lead_player=dealer+1
+    if self.lead_player == 4:
+      self.lead_player=0
+
+    self.players=game.players[self.lead_player:]+game.players[:self.lead_player]
+    for player in self.players:
+      player.clear_hand
+    count=0
+    for i in range(3):
+      for player in self.players:
+        for j in range(3):
+          player.hand.append(game.deck.deck[count])
+          count+=1
+
+  def bidding(self):
+    self.current_bid=5
+    for i,player in enumerate(self.players):
+      print player
+      player.sort_hand()
+      print '',player.hand
+      invalid_bid=True
+      if self.current_bid < 14:
+        while invalid_bid:
+          bid=int(raw_input('Bid?\n'))
+          if bid > self.current_bid and bid < 15:
+            self.current_bid=bid
+            invalid_bid=False
+          else:
+            if bid == 0:
+              invalid_bid=False
+      else:
+        while invalid_bid:
+          bid=int(raw_input('Bid?\n'))
+          if bid == 14:
+            self.current_bid=bid
+            invalid_bid=False
+          else:
+            if bid == 0:
+              invalid_bid=False
+
+
+
+
+
+
+
+
+
+class playing_card:
+  def __init__(self,rank,suit):
+
+    ranks=range(2,11)+'Jack Queen King Ace'.split()
+    suits={}
+    suits['Spades']=0
+    suits['Clubs']=1
+    suits['Diamonds']=2
+    suits['Hearts']=3
+
+    self.rank=rank
+    self.suit=suit
+
+    self.suit_rank=suits[suit]
+    self.sort_rank=self.rank
+    if rank == 5:
+      if self.suit_rank == 0 or self.suit_rank == 2:
+        self.sort_rank=100
+      else:
+        self.sort_rank=0
+
+    self.name=str(ranks[self.rank-2])+' of '+self.suit
+    tmp=ranks[self.rank-2]
+    if type(tmp) == str:
+      tmp=tmp[0]
+    self.compact_name=str(tmp)+self.suit[0].lower()
+
+    self.trump=False
+
+  def __str__(self):
+    return self.compact_name
+  def __repr__(self):
+    return self.compact_name
+
+  def __eq__(self,card):
+    if self.compact_name == card.compact_name:
+      return True
+    
+
+seed(1)
+deck=deck_of_cards()
+deck.shuffle()
+
+game=pedro_game(('Jacob','Amartya'),('Liz','Tuseeta'),deck)
+
+dealer=3
+hand1=pedro_round(game,dealer)
+hand1.bidding()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
