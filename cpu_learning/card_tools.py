@@ -38,6 +38,18 @@ class Pedro_Card(Card):
             else:
                 self.sort_rank = 0
 
+    def points(self, trump_suit):
+        if self.check_trump(trump_suit):
+            if rank == 2 or rank == 10 or rank == 11 or rank == 14:
+                return 1
+            elif rank == 5:
+                return 5
+            else:
+                return 0
+        else:
+            return 0
+
+    
     def check_trump(self, trump_suit):
         """ check if card matches trump suit
         """
@@ -68,11 +80,18 @@ class Hand_of_Cards(object):
         return len(self.cards)
 
     def play(self, loc_of_card):
-        return self.cards[loc_of_card]
+        return self.cards.pop(loc_of_card)
 
     def sort(self):
         self.cards=sorted(self.cards,key=lambda 
                           x:(x.suit_rank,x.sort_rank))
+
+    def where_trump(self, lead_suit, trump_suit):
+        pos = []
+        for i, card in enumerate(self.cards):
+            if card.check_trump(trump_suit) or card.check_trump(lead_suit):
+                pos.append(i)
+        return pos
 
     def discard(self, trump_suit):
         cards = []
@@ -194,11 +213,67 @@ class Pedro_Game:
                 dealt_cards = game.deck.deal(cards_needed)
                 self.players[pos] += dealt_cards
     
-    def play_tricks(self, count, order):
-        pass
-#        if count == 0:
-#            for pos in order:
-#                diff = self.players[pos] - 6
+    def play_tricks(self, count, order, trump_suit):
+        """ function to go through process of playing tricks
+            may split into different rounds
+            and I need function to determine winner of trick which 
+            returns location of winner
+        """
+        order = list(order)
+        trick = [0 for i in range(4)]
+        if count == 0:
+            for i, pos in enumerate(order):
+                trump_locs = self.players[pos].where_trump(trump_suit, trump_suit)
+                if trump_locs:
+                    np.random.shuffle(trump_locs)
+
+                    card = self.players[pos].play(trump_locs[0])
+                    trick[i] = card
+
+                    size = self.players[pos].size()
+                    if size > 5:
+                        diff = size - 5
+                        for i in range(diff):
+                            loop = True
+                            repeat = 0
+                            while loop:
+                                card = self.players[pos].cards[trump_locs[i+1+repeat]]
+                                if card.points == 0:
+                                    loop = False
+                                    self.players[pos].play(trump_locs[i+1+repeat])
+                                repeat += 1
+                else:
+                    order.pop(pos)
+            print trick
+        else:
+            # order determined by last winner
+            trick = [0 for i in range(4)] 
+            order = [i for i in range(loc,4)] + [i for i in range(loc)]
+            for i, pos in enumerate(order):
+                # Just play first card / Needs revision for strategy
+                if i == 0:
+                    card = self.players[pos].play(0)
+                    lead_suit = card.suit
+                    trick[i] = card
+                else:
+                    # This function is incorrect 
+                    # Need to implement function similar to np.where 
+                    # if lead_suit is off card / must first 
+                    # follow suit / if can't follow suit any suit allowed
+                    # if lead_suit is trump must play trump
+                    allowed_locs = self.players[pos].where_trump(lead_suit, trump_suit)
+                    if allowed_locs:
+                        np.random.shuffle(allowed_locs)
+                        card = self.players[pos].play(allowed_locs[0])
+                        trick[i] = card
+                    else:
+                        order.pop(pos)
+            print trick
+
+
+
+                
+                
 
 
 
@@ -241,10 +316,10 @@ for pos in game.dealer_pos:
 
     game.redeal(pos)
 
-    order = [loc + i for i in range(loc,4)] + [i for i in range(loc)]
+    order = [i for i in range(loc,4)] + [i for i in range(loc)]
     # play_tricks not yet implemented
     for i in range(6):
-        game.play_tricks(i, order)
+        game.play_tricks(i, order, trump_suit)
 
     rounds += 1
     if rounds > 0:
