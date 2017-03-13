@@ -86,11 +86,13 @@ class Hand_of_Cards(object):
         self.cards=sorted(self.cards,key=lambda 
                           x:(x.suit_rank,x.sort_rank))
 
-    def where_trump(self, lead_suit, trump_suit):
+    def where(self, suit, trump = False):
         pos = []
         for i, card in enumerate(self.cards):
-            if card.check_trump(trump_suit) or card.check_trump(lead_suit):
-                pos.append(i)
+            for suit in suits:
+                if card.check_trump(suit):
+                    pos.append(i)
+                    break
         return pos
 
     def discard(self, trump_suit):
@@ -270,6 +272,24 @@ class Pedro_Game:
                         order.pop(pos)
             print trick
 
+class Pedro_Trick:
+    """ Functions which enforce 
+        pedro rules for a trick
+    """
+
+    def __init__(self, trump_suit, lead_suit):
+        self.trump_suit = trump_suit
+        self.lead_suit = lead_suit
+
+    def where(self, hand, first_trick = False, lead_player = False):
+        if first_play:
+            pass
+        else:
+            pass
+
+
+
+
 
 
                 
@@ -306,6 +326,7 @@ np.random.seed(1)
 
 
 game = Pedro_Game()
+
 
 rounds = 0
 for pos in game.dealer_pos:
