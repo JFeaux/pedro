@@ -249,6 +249,7 @@ class Pedro_Game:
                                 cards_to_discard.append(j)
                         # sort indices from high to low so multiple 
                         # pops from list do not cause an error
+                        # Should sort to discard lowest rank cards first
                         cards_to_discard = sorted(cards_to_discard, ascending=False)
                         for loc in cards_to_discard:
                             self.players[0].play(loc)
@@ -256,7 +257,9 @@ class Pedro_Game:
                 else:
                     if i == 0:
                         # first player can play any card
-                        allowed_locs = [i for i in range(self.players[pos].size())]
+                        # Cant just be list / should be same structure as .trump
+                        #allowed_locs = [i for i in range(self.players[pos].size())]
+                        pass
                     else:
                         if lead_suit == trump_suit:
                             allowed_locs = self.players[pos].trump
