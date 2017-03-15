@@ -5,6 +5,7 @@ import numpy as np
 
 np.random.seed(1)
 
+
 game = Pedro_Game()
 game.start()
 

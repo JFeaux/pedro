@@ -1,6 +1,7 @@
 import sys
 import itertools
 import numpy as np
+import copy
 
 class Pedro_Card(object):
     """ Playing card for Pedro
@@ -121,7 +122,7 @@ class Pedro_Hand:
                 defaults to empyt list
         """
 
-        self.cards = cards
+        self.cards = copy.deepcopy(cards)
         self.name = name
         self.trump = []
         self.offsuits = []
@@ -223,9 +224,11 @@ class Pedro_Hand:
                 matches.append((pos,card))
         return matches
 
-    def __add__(self, cards):
-        return Pedro_Hand(name=self.name,
-                          cards=self.cards+cards)
+    def __add__(self, cards_to_add):
+        if not isinstance(cards_to_add, Pedro_Hand):
+            cards_to_add = Pedro_Hand(cards=cards_to_add)
+        self.cards += cards_to_add.cards
+        return self
 
     def __str__(self):
         s = self.name+'\n'
