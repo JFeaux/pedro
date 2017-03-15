@@ -1,0 +1,15 @@
+Framework for game play works
+
+Further Testing required for 
+    functions:
+        play_round
+        check_trick
+    and:
+        check trump_played counter
+
+Implement random play to integration 
+with cpu logic and testing that game 
+doesn't break with random input
+
+Implement scoring for each trick
+

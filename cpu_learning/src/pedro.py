@@ -3,9 +3,21 @@ import itertools
 import numpy as np
 
 class Pedro_Card(object):
-    """ Playing Card for Pedro
-        initialize with rank (integer between 2-14)
-        and suit (hearts, diamonds, spades, clubs)
+    """ Playing card for Pedro
+    
+    Attributes:
+        suit: string 
+            hearts / diamonds / spades / clubs
+        rank: integer 
+            value between 2-14 e.g. 14 = Ace
+        color: string
+            black or red
+        suit_rank: int 
+            used for sorting hands for easy visualization
+        sort_rank: int
+            used for sorting hands. pedros (5s)
+            get special rank since they can belong 
+            to either suit which matches their color
     """
 
     SUIT_RANKS = {'hearts':1,'diamonds':2,'spades':3,'clubs':4}
@@ -14,11 +26,16 @@ class Pedro_Card(object):
               'spades': 'black', 'clubs': 'black'}
 
     def __init__(self, rank, suit):
+        """ initialize Pedro Card
+
+        args:
+            rank: integer
+            suit: string
+        """
+
         self.suit = suit
         self.rank = rank
         self.color = self.COLORS[suit.lower()]
-
-        # attributes for sorting Pedro hand 
         self.suit_rank = self.SUIT_RANKS[suit]
         self.sort_rank = rank
         if rank == 5:
@@ -28,8 +45,12 @@ class Pedro_Card(object):
                 self.sort_rank = 0
 
     def points(self, trump_suit):
-        """ input trump_suit
-            returns point value of card
+        """ Point value of card
+
+        args:
+            trump_suit: string
+        returns: int
+            point value of card
         """
 
         singles = set([2, 10, 11, 14])
@@ -45,11 +66,12 @@ class Pedro_Card(object):
     
     def trump(self, trump_suit):
         """ check if card is trump
-            input: 
-                trump suit
-            return:
-                True / False
-         """
+
+        args:
+            trump_suit: string
+        return bool:
+            True if trump
+        """
 
         if self.rank != 5:
             # If card is not pedro / does suit match
@@ -74,27 +96,83 @@ class Pedro_Card(object):
 
 class Pedro_Hand:
     """ Pedro Hand
-        initialize with an iterable of Pedro_Cards /
-        defaults to empty hand
+
+    attributes:
+        cards: list 
+            list of Pedro_Cards in hand
+        name: string
+            player name associated with hand
+        trump: list
+            list of trump cards in hand
+        offsuit: list
+            list of offsuit cards in hand
+        suits: set
+            set of all suits in hand
     """
 
     def __init__(self, name='Player', cards=[]):
+        """ initialize Pedro Hand
+
+        args:
+            name: string 
+                player name
+            cards: iterable of Pedro_Cards
+                initial cards in hand
+                defaults to empyt list
+        """
+
         self.cards = cards
         self.name = name
+        self.trump = []
+        self.offsuits = []
+        self.suits = set()
 
     def size(self):
+        """ Returns number of cards in hand"""
+
         return len(self.cards)
 
     def play(self, loc_of_card):
+        """ Plays a card
+
+        args:
+            loc_of_card: int
+                position of card to be played
+        """
         return self.cards.pop(loc_of_card)
 
     def sort(self):
+        """ sorts hand by grouping by suit"""
+
         self.cards = sorted(self.cards,key=lambda 
                             x:(x.suit_rank,x.sort_rank))
+
+    def sort_by_points(self, trump_suit):
+        """ sorts hand by point value of cards
+
+        args:
+            trump_suit: string
+        """
+
+        self.cards = sorted(self.cards,key=lambda 
+                            x:(x.points(trump_suit), 
+                               x.rank),
+                               reverse=True)
+
     def clear(self):
+        """ deletes all cards from hand"""
+
         self.cards = []
 
     def discard(self, trump_suit):
+        """ discards all offsuit cards
+
+        args:
+           trump_suit: string
+        return:
+            list of discarded cards
+        """
+        
         cards = []
         discarded = []
         for card in self.cards:
@@ -106,9 +184,17 @@ class Pedro_Hand:
         return discarded
 
     def split(self, trump_suit):
-        """ splits hand into 
-            trump cards and offsuit cards
-            and builds set of suits in hand
+        """ splits hand by trump / offsuit
+        
+        splits hand into 
+        trump cards and offsuit cards
+        and builds set of all suits in hand
+        sets trump / suits / offsuit
+        attributes of hand
+
+        args:
+                trump_suit: string
+
         """
         self.trump =[]
         self.offsuit = []
@@ -122,6 +208,15 @@ class Pedro_Hand:
                 self.suits.add(card.suit)
 
     def where(self, suit):
+        """ which offcards match suit
+
+        args:
+            suit: string
+        returns list:
+            list of tuples (position of card, card) 
+            of cards which match suit
+        """
+
         matches = []
         for pos, card in self.offsuit:
             if card.suit == suit:
@@ -205,14 +300,16 @@ class Pedro_Game:
                 team = self.teams[pos]
                 score[team] -= 6
             else:
+                # replace with cpu selection of trump
                 print self.players[pos]
                 trump_suit = raw_input('Trump?\n')
                 print 'Winning Bid / Trump Suit'
                 print bid, '/', trump_suit
 
+                # discard all offsuit cards
                 self.discard_offsuit(order, trump_suit)
-
-                # Need to write
+                
+                # play tricks
                 self.play_round(pos, trump_suit)
 
                 score[0] += 28
@@ -227,6 +324,7 @@ class Pedro_Game:
 
     def play_round(self, pos, trump_suit):
         lead_suit = trump_suit
+        trumps_played = 0
         for count in range(6):
             # Playing Order is winning bidder for first trick
             # then winner or last trick
@@ -234,32 +332,31 @@ class Pedro_Game:
             order = [i for i in range(pos,4)] + [
                      i for i in range(0,pos)]
             for i, pos in enumerate(order):
+                self.players[pos].split(trump_suit)
                 if count == 0:
                     # Must be trump card for first trick
-                    self.players[pos].split(trump_suit)
                     allowed_locs = self.players[pos].trump
 
                     # Need to handle rare case of more than 6 trumps
                     # discard non-point cards to get down to 5
-                    if len(allowed_locs) > 6:
-                        excess = 6 - len(allowed_locs)
-                        cards_to_discard = []
-                        for j, card in enumerate(self.players[0].cards):
-                            if not card.points(trump_suit):
-                                cards_to_discard.append(j)
-                        # sort indices from high to low so multiple 
-                        # pops from list do not cause an error
-                        # Should sort to discard lowest rank cards first
-                        cards_to_discard = sorted(cards_to_discard, ascending=False)
-                        for loc in cards_to_discard:
-                            self.players[0].play(loc)
-                        allowed_locs = [i for i in range(5)]
+                    num_trumps = len(allowed_locs)
+                    if num_trumps > 6:
+                        # sort hand by points then rank
+                        self.players[pos].sort_by_points(trump_suit)
+                        excess = num_trumps - 6
+                        # discard lowest non-point trumps 
+                        # to get back to 6 cards
+                        print 'More than 6 trumps'
+                        print 'Discarded:'
+                        for i in range(excess):
+                            discard = self.players[pos].play(num_trumps - 1 - i)
+                            print '',discard
+                        self.players[pos].split(trump_suit)
+                        allowed_locs = self.players[pos].trump
                 else:
                     if i == 0:
                         # first player can play any card
-                        # Cant just be list / should be same structure as .trump
-                        #allowed_locs = [i for i in range(self.players[pos].size())]
-                        pass
+                        allowed_locs = self.players[pos].trump + self.players[pos].offsuit
                     else:
                         if lead_suit == trump_suit:
                             allowed_locs = self.players[pos].trump
@@ -271,17 +368,46 @@ class Pedro_Game:
                                                 + self.players[pos].trump)
                             else:
                                 # any card if can't follow suit
-                                allowed_locs = [i for i in range(self.players[pos].size())]
+                                allowed_locs = self.players[pos].trump + self.players[pos].offsuit
                 if allowed_locs:
+                    print self.players[pos]
                     print allowed_locs
                     loc = int(raw_input('Card?\n'))
                     card = self.players[pos].play(loc)
+                    if i == 0:
+                        lead_suit = card.suit
+                    if card.trump(trump_suit):
+                        trumps_played += 1
                     trick[i] = card
-            
-
+                else:
+                    self.players[pos].clear()
+            print trick 
             # pos -> person that wins trick
             # Need to write check_trick function
-            #pos = self.check_trick(trick, trump_suit, lead_suit)
+            winner = self.check_trick(trick, trump_suit, lead_suit)
+            print winner
+            pos = order[winner]
+            print pos, self.players[pos].name, 'won the trick'
+            if trumps_played == 14:
+                break
+
+    def check_trick(self, trick, trump_suit, lead_suit):
+        card_vals = np.zeros(4, dtype=int)
+        for i, card in enumerate(trick):
+            try:
+                card_val = card.rank
+                if card.trump(trump_suit):
+                    card_val *= 100
+                if card.suit == trump_suit:
+                    card_val *= 10
+                if card.suit == lead_suit:
+                    card_val *= 10
+                card_vals[i] = card_val
+            except AttributeError:
+                # Player with no valid cards
+                pass
+        winner = np.argmax(card_vals)
+        return winner
 
     def discard_offsuit(self, order, trump_suit):
         """All players discard offsuit cards 
@@ -303,8 +429,6 @@ class Pedro_Game:
                     else:
                         # If Deck runs out
                         # fill hand with discards
-                        # Need to Test This Section
-                        # Very unlikely scenario
                         num_dealt = len(dealt)
                         self.players[pos] += dealt
                         diff = cards_needed - num_dealt
@@ -484,40 +608,9 @@ class Pedro_Game:
 #    return suits[np.argmax(ranks)]
 
 
-np.random.seed(1)
-
-#deck = Deck()
-#deck.shuffle()
-#dealt = deck.deal(6)
-#
-#hand = Pedro_Hand(dealt)
-#hand.split('spades')
-
+#np.random.seed(1)
 #game = Pedro_Game()
-#
-#
-#rounds = 0
-#for pos in game.dealer_pos:
-#    game.deal_hand(pos)
-#
-#    bid, loc = game.bidding(pos)
-#    trump_suit = choose_trump(game.players[loc])
-#
-#    game.redeal(pos)
-#
-#    order = [i for i in range(loc,4)] + [i for i in range(loc)]
-#    # play_tricks not yet implemented
-#    for i in range(6):
-#        game.play_tricks(i, order, trump_suit)
-#
-#    rounds += 1
-#    if rounds > 0:
-#        break
-#    game.reset()
 
-
-game = Pedro_Game()
-game.start()
 
 
 
