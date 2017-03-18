@@ -124,7 +124,7 @@ class Pedro_Hand:
     EVs['deuce'] = 1
     EVs['ace'] = 4.
     EVs['ace_king'] = 5.6
-    EVs['ace_king_queen'] = 8.01
+    EVs['ace_king_queen'] = 11.
     EVs['ace_king_queen_jack'] = 12.
     EVs['jack_fourth'] = 1.
     EVs['ten_fifth'] = 1.
@@ -429,12 +429,13 @@ class Pedro_Game:
 
             # discard all offsuit cards
             self.discard_offsuit(order, trump_suit)
-            
+            print 'Bidder: ', self.players[pos].name
+            print 'Bid: ', bid
+            print 'Trump: ', trump_suit
             # play tricks
             team1, team2 = self.play_round(pos, trump_suit)
             if pos == 0 or pos == 2:
                 # team1 won bid
-                print bid, team1
                 if bid == 14 and team1 == 14:
                     score[0] += 28
                 else:
@@ -445,7 +446,6 @@ class Pedro_Game:
                         score[0] -= bid
             else:
                 # team2 won bid
-                print bid, team2
                 if bid == 14 and team2 == 14:
                     score[1] += 28
                 else:
@@ -455,7 +455,7 @@ class Pedro_Game:
                     else:
                         score[1] -= bid
             print score
-            if score[0] >= 1000000 or score[1] >= 1000000:
+            if score[0] >= 1000 or score[1] >= 1000:
                 print 'Game Over'
                 print score
                 break
@@ -472,7 +472,7 @@ class Pedro_Game:
         for count in range(6):
             # Playing Order is winning bidder for first trick
             # then winner or last trick
-            trick = [0 for i in range(4)]
+            trick = ['' for i in range(4)]
             order = [i for i in range(pos,4)] + [
                      i for i in range(0,pos)]
             for i, pos in enumerate(order):
@@ -513,6 +513,7 @@ class Pedro_Game:
                             else:
                                 # any card if can't follow suit
                                 allowed_locs = self.players[pos].trump + self.players[pos].offsuit
+                print self.players[pos]
                 if allowed_locs:
                     #print self.players[pos]
                     #print allowed_locs
@@ -534,7 +535,7 @@ class Pedro_Game:
                 else:
                     self.players[pos].clear()
             # pos -> person that wins trick
-            #self.print_trick(order, trick)
+            self.print_trick(order, trick)
             winner, trick_points = self.check_trick(trick, trump_suit, lead_suit)
             pos = order[winner]
             # Quick scoring implementation
@@ -542,10 +543,12 @@ class Pedro_Game:
                 team1 += trick_points
             else:
                 team2 += trick_points
-            #print self.players[pos].name, 'won the trick'
-            #print trick_points
+            print self.players[pos].name, 'won the trick'
+            print '',team1, team2
             if points_played == 14:
+                print team1, team2
                 return team1, team2
+        print team1, team2
         return team1, team2
 
     def print_trick(self, order, trick):
@@ -553,8 +556,8 @@ class Pedro_Game:
                 self.players[order[0]].name,
                 self.players[order[1]].name)
         line4 = '{:20}{:>20}'.format(
-                self.players[order[2]].name,
-                self.players[order[3]].name)
+                self.players[order[3]].name,
+                self.players[order[2]].name)
         line2 = '{:>20}  {:20}'.format(trick[0],trick[1])
         line3 = '{:>20}  {:20}'.format(trick[3],trick[2])
         print
