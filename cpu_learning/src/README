@@ -17,6 +17,5 @@ Wrote function to automate bidding
     Needs further testing
 
 
-Bugs:
-    Code only checks if first player has > 6 trumps
+Known Bugs:
 

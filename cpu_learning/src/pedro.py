@@ -413,28 +413,52 @@ class Pedro_Game:
             self.deal_hand(order)
             bid, winning_bidder = self.bidding(order)
             pos = order[winning_bidder]
+            # Dont let computer pass deck
             if bid == 0:
-                print 'Passed Deck\n'
-                team = self.teams[pos]
-                score[team] -= 6
+                bid = 6
+                #print 'Passed Deck\n'
+                #team = self.teams[pos]
+                #score[team] -= 6
+            #else:
+            # replace with cpu selection of trump
+            #print self.players[pos]
+            trump_suit = self.players[pos].bid_suit
+            #trump_suit = raw_input('Trump?\n')
+            #print 'Winning Bid / Trump Suit'
+            #print bid, '/', trump_suit
+
+            # discard all offsuit cards
+            self.discard_offsuit(order, trump_suit)
+            
+            # play tricks
+            team1, team2 = self.play_round(pos, trump_suit)
+            if pos == 0 or pos == 2:
+                # team1 won bid
+                print bid, team1
+                if bid == 14 and team1 == 14:
+                    score[0] += 28
+                else:
+                    score[1] += team2
+                    if team1 >= bid:
+                        score[0] += team1
+                    else:
+                        score[0] -= bid
             else:
-                # replace with cpu selection of trump
-                print self.players[pos]
-                trump_suit = raw_input('Trump?\n')
-                print 'Winning Bid / Trump Suit'
-                print bid, '/', trump_suit
-
-                # discard all offsuit cards
-                self.discard_offsuit(order, trump_suit)
-                
-                # play tricks
-                self.play_round(pos, trump_suit)
-
-                score[0] += 28
-                if score[0] >= 52 or score[1] >= 52:
-                    print 'Game Over'
-                    print score
-                    break
+                # team2 won bid
+                print bid, team2
+                if bid == 14 and team2 == 14:
+                    score[1] += 28
+                else:
+                    score[0] += team1
+                    if team2 >= bid:
+                        score[1] += team2
+                    else:
+                        score[1] -= bid
+            print score
+            if score[0] >= 1000000 or score[1] >= 1000000:
+                print 'Game Over'
+                print score
+                break
 
             print 'Score:'
             print '  {} {}\n'.format(*score)
@@ -443,6 +467,8 @@ class Pedro_Game:
     def play_round(self, pos, trump_suit):
         lead_suit = trump_suit
         points_played = 0
+        team1 = 0
+        team2 = 0
         for count in range(6):
             # Playing Order is winning bidder for first trick
             # then winner or last trick
@@ -458,7 +484,6 @@ class Pedro_Game:
                     # Need to handle rare case of more than 6 trumps
                     # discard non-point cards to get down to 5
                     num_trumps = len(allowed_locs)
-                    # Error: Any player can have more than 6 trumps
                     if num_trumps > 6:
                         # sort hand by points then rank
                         self.players[pos].sort_by_points(trump_suit)
@@ -489,25 +514,39 @@ class Pedro_Game:
                                 # any card if can't follow suit
                                 allowed_locs = self.players[pos].trump + self.players[pos].offsuit
                 if allowed_locs:
-                    print self.players[pos]
-                    print allowed_locs
-                    loc = int(raw_input('Card?\n'))
+                    #print self.players[pos]
+                    #print allowed_locs
+                    #loc = int(raw_input('Card?\n'))
+                    # Get random play
+                    np.random.shuffle(allowed_locs)
+                    loc = allowed_locs[0][0]
                     card = self.players[pos].play(loc)
                     if i == 0:
                         lead_suit = card.suit
                     points_played += card.points(trump_suit)
                     trick[i] = card
+                    if card.points(trump_suit) and card.rank == 2:
+                        # the Deuce
+                        if pos == 0 or pos == 2:
+                            team1 += 1
+                        else:
+                            team2 += 1
                 else:
                     self.players[pos].clear()
             # pos -> person that wins trick
-            self.print_trick(order, trick)
+            #self.print_trick(order, trick)
             winner, trick_points = self.check_trick(trick, trump_suit, lead_suit)
             pos = order[winner]
-            print self.players[pos].name, 'won the trick'
-            print trick_points
-            sys.exit()
+            # Quick scoring implementation
+            if pos == 0 or pos == 2:
+                team1 += trick_points
+            else:
+                team2 += trick_points
+            #print self.players[pos].name, 'won the trick'
+            #print trick_points
             if points_played == 14:
-                break
+                return team1, team2
+        return team1, team2
 
     def print_trick(self, order, trick):
         line1 = '{:20}{:>20}'.format(
@@ -614,7 +653,7 @@ class Pedro_Game:
             # Prints hand and gets input 
             # from command line for bidding
             # will be replaced by cpu
-            print self.players[pos]
+            #print self.players[pos]
             if i == 3 and min_bid == 6:
                 bids = [0, 6, 14]
                 #bid = int(raw_input(str(bids) + '\n'))
@@ -637,74 +676,4 @@ class Pedro_Game:
                 min_bid = current_bid + 1
                 loc = i 
         return current_bid, loc
-
-    def card_value_getter(self, pos, trump_suit):
-        lead_suit = trump_suit
-        points_played = 0
-        points = 0
-        for count in range(4):
-            # Playing Order is winning bidder for first trick
-            # then winner or last trick
-            trick = [0 for i in range(4)]
-            order = [i for i in range(pos,4)] + [
-                     i for i in range(0,pos)]
-            for i, pos in enumerate(order):
-                self.players[pos].split(trump_suit)
-                if count == 0:
-                    # Must be trump card for first trick
-                    allowed_locs = self.players[pos].trump
-                else:
-                    if i == 0:
-                        # first player can play any card
-                        allowed_locs = self.players[pos].trump + self.players[pos].offsuit
-                    else:
-                        if lead_suit == trump_suit:
-                            allowed_locs = self.players[pos].trump
-                        else:
-                            if lead_suit in self.players[pos].suits:
-                                # must follow suit if possible 
-                                # but can always trump
-                                allowed_locs = (self.players[pos].where(lead_suit) 
-                                                + self.players[pos].trump)
-                            else:
-                                # any card if can't follow suit
-                                allowed_locs = self.players[pos].trump + self.players[pos].offsuit
-                if allowed_locs:
-                    #print self.players[pos]
-                    #print allowed_locs
-                    #loc = int(raw_input('Card?\n'))
-                    if i == 0:
-                        loc = allowed_locs[0][0]
-                    elif i == 2:
-                        loc = allowed_locs[0][0]
-                        for tmp, card in allowed_locs:
-                            if card.points(trump_suit) == 5:
-                                loc = tmp
-                                break
-                    else:
-                        loc = allowed_locs[0][0]
-                        for tmp, card in allowed_locs:
-                            if card.points(trump_suit) != 5:
-                                loc = tmp
-                                break
-                    card = self.players[pos].play(loc)
-                    if i == 0:
-                        lead_suit = card.suit
-                    points_played += card.points(trump_suit)
-                    trick[i] = card
-                else:
-                    self.players[pos].clear()
-            winner, trick_points = self.check_trick(trick, trump_suit, lead_suit)
-            self.print_trick(order, trick)
-            print trick_points
-            pos = order[winner]
-            points += trick_points
-        return points
-
-
-
-
-
-
-
 
