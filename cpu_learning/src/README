@@ -13,3 +13,10 @@ doesn't break with random input
 
 Implement scoring for each trick
 
+Wrote function to automate bidding
+    Needs further testing
+
+
+Bugs:
+    Code only checks if first player has > 6 trumps
+
